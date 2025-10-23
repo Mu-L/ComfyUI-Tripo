@@ -114,6 +114,7 @@ class TripoAPIDraft:
                 "model_seed": ("INT", {"default": 42}),
                 "texture_seed": ("INT", {"default": 42}),
                 "texture_quality": (["standard", "detailed"], {"default": "standard"}),
+                "geometry_quality": (["standard", "detailed"], {"default": "standard"}),
                 "texture_alignment": (["original_image", "geometry"], {"default": "original_image"}),
                 "face_limit": ("INT", {"min": -1, "max": 500000, "default": -1}),
                 "quad": ("BOOLEAN", {"default": False}),
@@ -136,7 +137,7 @@ class TripoAPIDraft:
 
     async def generate_mesh(self, mode, prompt=None, negative_prompt=None, image=None, image_left=None, image_back=None, image_right=None,
                       apikey=None, model_version=None, texture=None, pbr=None, style=None,
-                      image_seed=None, model_seed=None, texture_seed=None, texture_quality=None, texture_alignment=None,
+                      image_seed=None, model_seed=None, texture_seed=None, texture_quality=None, geometry_quality=None, texture_alignment=None,
                       face_limit=None, quad=None, compress=None, generate_parts=None, smart_low_poly=None,
                       auto_size=None, orientation=None, file_prefix=None, output_directory=None):
         client, key = GetTripoAPI(apikey)
@@ -176,6 +177,7 @@ class TripoAPIDraft:
                     model_seed=model_seed,
                     texture_seed=texture_seed,
                     texture_quality=texture_quality,
+                    geometry_quality=geometry_quality,
                     texture_alignment=texture_alignment,
                     face_limit=face_limit,
                     quad=quad,
@@ -485,10 +487,15 @@ class TripoConvertNode:
                 "texture_size": ("INT", {"min": 128, "max": 4096, "default": 4096}),
                 "texture_format": (["BMP", "DPX", "HDR", "JPEG", "OPEN_EXR", "PNG", "TARGA", "TIFF", "WEBP"], {"default": "JPEG"}),
                 "pivot_to_center_bottom": ("BOOLEAN", {"default": False}),
+                "scale_factor": ("FLOAT", {"default": 1.0, "min": 0}),
                 "with_animation": ("BOOLEAN", {"default": True}),
                 "pack_uv": ("BOOLEAN", {"default": False}),
                 "bake": ("BOOLEAN", {"default": True}),
                 "part_names": ("STRING", {"multiline": True}),
+                "fbx_preset": (["blender", "mixamo", "3dsmax"], {"default": "blender"}),
+                "export_vertex_colors": ("BOOLEAN", {"default": False}),
+                "export_orientation": (["+x", "+y", "-x", "-y"], {"default": "+x"}),
+                "animate_in_place": ("BOOLEAN", {"default": False}),
             }
         }
 
@@ -500,7 +507,7 @@ class TripoConvertNode:
     async def generate_mesh(self, model_info, format, quad=False, force_symmetry=False, face_limit=10000,
                      flatten_bottom=False, flatten_bottom_threshold=0.01, texture_size=4096,
                      texture_format="JPEG", pivot_to_center_bottom=False, with_animation=False,
-                     pack_uv=False, bake=True, part_names=None):
+                     pack_uv=False, bake=True, part_names=None, fbx_preset=None, export_vertex_colors=False, export_orientation=None, animate_in_place=False):
         client, key = GetTripoAPI(model_info["apikey"])
 
         async with client:
@@ -521,7 +528,11 @@ class TripoConvertNode:
                 with_animation=with_animation,
                 pack_uv=pack_uv,
                 bake=bake,
-                part_names=part_names_list
+                part_names=part_names_list,
+                fbx_preset=fbx_preset,
+                export_vertex_colors=export_vertex_colors,
+                export_orientation=export_orientation,
+                animate_in_place=animate_in_place
             )
             task = await client.wait_for_task(task_id, verbose=True)
             if task.status == "success":
